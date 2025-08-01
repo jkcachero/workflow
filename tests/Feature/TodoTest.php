@@ -76,7 +76,7 @@ it('allows authenticated user to mark their todo as completed', function () {
 
     $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
         'completed' => true,
-        'title' => $todo->title, // keep title unchanged
+        'title' => $todo->title,
     ]);
 
     $response->assertStatus(Response::HTTP_OK);
@@ -110,7 +110,7 @@ it('allows authenticated user to edit their todo title', function () {
         'completed' => (bool) $todo->completed,
     ]);
 
-    $response->assertStatus(200);
+    $response->assertStatus(Response::HTTP_OK);
     $this->assertDatabaseHas('todos', [
         'id' => $todo->id,
         'title' => 'New edited title',
