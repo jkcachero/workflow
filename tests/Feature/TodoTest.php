@@ -88,3 +88,19 @@ it('does not allow user to delete others\' todos', function () {
     $this->assertDatabaseHas('todos', ['id' => $todo->id]);
 });
 
+it('allows authenticated user to mark their todo as completed', function () {
+    $user = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $user->id, 'completed' => false]);
+
+    $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
+        'completed' => true,
+        'title' => $todo->title, // keep title unchanged
+    ]);
+
+    $response->assertStatus(200);
+    $this->assertDatabaseHas('todos', [
+        'id' => $todo->id,
+        'completed' => true,
+    ]);
+});
+
