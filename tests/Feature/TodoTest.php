@@ -28,3 +28,42 @@ it('does not allow unauthenticated user to list todos', function () {
     $response->assertStatus(Response::HTTP_UNAUTHORIZED);
 });
 
+it('allows authenticated user to update their todo', function () {
+    $user = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $user->id, 'title' => 'Old title']);
+
+    $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
+        'title' => 'Updated title',
+    ]);
+
+    $response->assertStatus(Response::HTTP_OK);
+    $this->assertDatabaseHas('todos', [
+        'id' => $todo->id,
+        'title' => 'Updated title',
+    ]);
+});
+
+it('does not allow user to update others\' todos', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $otherUser->id, 'title' => 'Other user todo']);
+
+    $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
+        'title' => 'Hacked title',
+    ]);
+
+    $response->assertStatus(Response::HTTP_FORBIDDEN);
+});
+
+it('validates title when updating a todo', function () {
+    $user = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
+        'title' => '',
+    ]);
+
+    $response->assertStatus(Response::HTTP_UNPROCESSABLE_ENTITY);
+    $response->assertJsonValidationErrors('title');
+});
+
