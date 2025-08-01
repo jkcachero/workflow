@@ -31,6 +31,9 @@ const newTodo = ref('');
 const loading = ref(false);
 const error = ref('');
 
+const editingId = ref<number | null>(null);
+const editedTitle = ref('');
+
 const addTodo = () => {
     if (!newTodo.value.trim()) return;
     loading.value = true;
@@ -71,6 +74,37 @@ const deleteTodo = (todo) => {
         onSuccess: () => router.reload({ only: ['todos'] }),
         onError: () => {
             error.value = 'Failed to delete todo.';
+        },
+        onFinish: () => {
+            loading.value = false;
+        },
+    });
+};
+
+const startEditing = (todo) => {
+    editingId.value = todo.id;
+    editedTitle.value = todo.title;
+};
+
+const cancelEditing = () => {
+    editingId.value = null;
+    editedTitle.value = '';
+};
+
+const submitEdit = (todo) => {
+    if (!editedTitle.value.trim()) {
+        cancelEditing();
+        return;
+    }
+    loading.value = true;
+    error.value = '';
+    router.put(`/todos/${todo.id}`, { title: editedTitle.value, completed: todo.completed }, {
+        onSuccess: () => {
+            router.reload({ only: ['todos'] });
+            cancelEditing();
+        },
+        onError: () => {
+            error.value = 'Failed to update todo.';
         },
         onFinish: () => {
             loading.value = false;
@@ -131,15 +165,31 @@ const goToPage = (page) => {
                                 :disabled="loading"
                                 class="h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 dark:border-gray-600 dark:bg-gray-800"
                             />
-                            <span
-                                :class="{
-                                    'line-through text-gray-400 dark:text-gray-500': todo.completed,
-                                    'text-gray-900 dark:text-gray-100': !todo.completed,
-                                }"
-                                class="select-none text-lg font-medium"
-                            >
-                                {{ todo.title }}
-                            </span>
+                            <template v-if="editingId === todo.id">
+                                <input
+                                    v-model="editedTitle"
+                                    @blur="submitEdit(todo)"
+                                    @keydown.enter.prevent="submitEdit(todo)"
+                                    @keydown.esc.prevent="cancelEditing"
+                                    :disabled="loading"
+                                    class="flex-grow rounded border border-gray-300 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                                    autofocus
+                                />
+                            </template>
+                            <template v-else>
+                                <span
+                                    @click="startEditing(todo)"
+                                    :class="{
+                                        'line-through text-gray-400 dark:text-gray-500': todo.completed,
+                                        'text-gray-900 dark:text-gray-100 cursor-pointer': !todo.completed,
+                                    }"
+                                    class="select-none text-lg font-medium"
+                                    tabindex="0"
+                                    @keydown.enter.prevent="startEditing(todo)"
+                                >
+                                    {{ todo.title }}
+                                </span>
+                            </template>
                         </div>
                         <button
                             @click="deleteTodo(todo)"

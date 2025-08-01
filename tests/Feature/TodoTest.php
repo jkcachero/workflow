@@ -101,3 +101,19 @@ it('allows authenticated user to list their todos with pagination', function () 
     $this->assertCount(10, $response->json('data'));
 });
 
+it('allows authenticated user to edit their todo title', function () {
+    $user = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $user->id, 'title' => 'Old title']);
+
+    $response = $this->actingAs($user, 'sanctum')->putJson("/api/todos/{$todo->id}", [
+        'title' => 'New edited title',
+        'completed' => (bool) $todo->completed,
+    ]);
+
+    $response->assertStatus(200);
+    $this->assertDatabaseHas('todos', [
+        'id' => $todo->id,
+        'title' => 'New edited title',
+    ]);
+});
+
