@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Inertia\Inertia;
 
 class TodoController extends Controller
 {
@@ -15,15 +16,11 @@ class TodoController extends Controller
     {
         $todos = $request->user()->todos()->paginate(10);
 
-        return response()->json($todos);
-    }
+        if ($request->wantsJson()) {
+            return response()->json($todos);
+        }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return Inertia::render('Todos', ['todos' => $todos]);
     }
 
     /**
@@ -37,33 +34,18 @@ class TodoController extends Controller
 
         $todo = $request->user()->todos()->create($data);
 
-        return response()->json($todo, Response::HTTP_CREATED);
-    }
+        if ($request->wantsJson()) {
+            return response()->json($todo, Response::HTTP_CREATED);
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+        return redirect()->route('todos.index');
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Todo $todo)
     {
-        $todo = Todo::findOrFail($id);
-
-        // Authorization: ensure the authenticated user owns the todo
         if ($request->user()->id !== $todo->user_id) {
             return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
@@ -75,23 +57,29 @@ class TodoController extends Controller
 
         $todo->update($data);
 
-        return response()->json($todo, Response::HTTP_OK);
+        if ($request->wantsJson()) {
+            return response()->json($todo, Response::HTTP_OK);
+        }
+
+        return redirect()->route('todos.index');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Request $request, $id)
+    public function destroy(Request $request, Todo $todo)
     {
-        $todo = Todo::findOrFail($id);
-
         if ($request->user()->id !== $todo->user_id) {
-            return response()->json(['message' => 'Forbidden'], 403);
+            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
         }
 
         $todo->delete();
 
-        return response()->noContent();
+        if ($request->wantsJson()) {
+            return response()->noContent();
+        }
+
+        return redirect()->route('todos.index');
     }
 }
 
