@@ -80,8 +80,17 @@ class TodoController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Request $request, $id)
     {
-        //
+        $todo = Todo::findOrFail($id);
+
+        if ($request->user()->id !== $todo->user_id) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+
+        $todo->delete();
+
+        return response()->noContent();
     }
 }
+

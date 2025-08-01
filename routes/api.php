@@ -12,5 +12,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/todos', [TodoController::class, 'store'])->name('api.todos.store');
     Route::get('/todos', [TodoController::class, 'index'])->name('api.todos.index');
     Route::put('/todos/{id}', [TodoController::class, 'update'])->name('api.todos.update');
+    Route::delete('/todos/{id}', [TodoController::class, 'destroy'])->name('api.todos.destroy');
 });
 
