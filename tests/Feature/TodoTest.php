@@ -67,3 +67,24 @@ it('validates title when updating a todo', function () {
     $response->assertJsonValidationErrors('title');
 });
 
+it('allows authenticated user to delete their todo', function () {
+    $user = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/todos/{$todo->id}");
+
+    $response->assertStatus(204);
+    $this->assertDatabaseMissing('todos', ['id' => $todo->id]);
+});
+
+it('does not allow user to delete others\' todos', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $todo = Todo::factory()->create(['user_id' => $otherUser->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/todos/{$todo->id}");
+
+    $response->assertStatus(403);
+    $this->assertDatabaseHas('todos', ['id' => $todo->id]);
+});
+
