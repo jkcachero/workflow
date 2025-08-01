@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Todo;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -58,9 +59,22 @@ class TodoController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        $todo = Todo::findOrFail($id);
+
+        // Authorization: ensure the authenticated user owns the todo
+        if ($request->user()->id !== $todo->user_id) {
+            return response()->json(['message' => 'Forbidden'], Response::HTTP_FORBIDDEN);
+        }
+
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $todo->update($data);
+
+        return response()->json($todo, Response::HTTP_OK);
     }
 
     /**
