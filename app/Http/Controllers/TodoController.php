@@ -13,7 +13,7 @@ class TodoController extends Controller
      */
     public function index(Request $request)
     {
-        $todos = $request->user()->todos()->get();
+        $todos = $request->user()->todos()->paginate(10);
 
         return response()->json($todos);
     }

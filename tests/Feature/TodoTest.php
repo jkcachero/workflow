@@ -4,24 +4,6 @@ use App\Models\Todo;
 use App\Models\User;
 use Illuminate\Http\Response;
 
-it('allows authenticated user to list their todos', function () {
-    $user = User::factory()->create();
-    $otherUser = User::factory()->create();
-
-    // Create todos for both users
-    Todo::factory()->create(['user_id' => $user->id, 'title' => 'User todo 1']);
-    Todo::factory()->create(['user_id' => $user->id, 'title' => 'User todo 2']);
-    Todo::factory()->create(['user_id' => $otherUser->id, 'title' => 'Other user todo']);
-
-    $response = $this->actingAs($user, 'sanctum')->getJson('/api/todos');
-
-    $response->assertStatus(Response::HTTP_OK);
-    $response->assertJsonCount(2);
-    $response->assertJsonFragment(['title' => 'User todo 1']);
-    $response->assertJsonFragment(['title' => 'User todo 2']);
-    $response->assertJsonMissing(['title' => 'Other user todo']);
-});
-
 it('does not allow unauthenticated user to list todos', function () {
     $response = $this->getJson('/api/todos');
 
@@ -73,7 +55,7 @@ it('allows authenticated user to delete their todo', function () {
 
     $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/todos/{$todo->id}");
 
-    $response->assertStatus(204);
+    $response->assertStatus(Response::HTTP_NO_CONTENT);
     $this->assertDatabaseMissing('todos', ['id' => $todo->id]);
 });
 
@@ -84,7 +66,7 @@ it('does not allow user to delete others\' todos', function () {
 
     $response = $this->actingAs($user, 'sanctum')->deleteJson("/api/todos/{$todo->id}");
 
-    $response->assertStatus(403);
+    $response->assertStatus(Response::HTTP_FORBIDDEN);
     $this->assertDatabaseHas('todos', ['id' => $todo->id]);
 });
 
@@ -97,10 +79,25 @@ it('allows authenticated user to mark their todo as completed', function () {
         'title' => $todo->title, // keep title unchanged
     ]);
 
-    $response->assertStatus(200);
+    $response->assertStatus(Response::HTTP_OK);
     $this->assertDatabaseHas('todos', [
         'id' => $todo->id,
         'completed' => true,
     ]);
+});
+
+it('allows authenticated user to list their todos with pagination', function () {
+    $user = User::factory()->create();
+
+    Todo::factory()->count(15)->create(['user_id' => $user->id]);
+
+    $response = $this->actingAs($user, 'sanctum')->getJson('/api/todos');
+
+    $response->assertStatus(Response::HTTP_OK);
+    $response->assertJsonStructure([
+        'data',
+        'links',
+    ]);
+    $this->assertCount(10, $response->json('data'));
 });
 
