@@ -28,4 +28,4 @@ On Todos page you'll be able to add, edit, delete your todos.
 
 ### Testing the app
 To run the tests, run `php artisan test`.
-This app using PEST for testing.
+This app is using PEST for testing.
